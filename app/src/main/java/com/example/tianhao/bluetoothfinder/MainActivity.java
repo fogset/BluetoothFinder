@@ -10,15 +10,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     ListView listView;
     TextView statusTextView;
     Button searchButton;
-
+    ArrayList<String> bluetoothDevices = new ArrayList<>();
+    ArrayList<String> addresses = new ArrayList<>();
+    ArrayAdapter arrayAdapter;
 
     BluetoothAdapter bluetoothAdapter;
     private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -35,13 +40,28 @@ public class MainActivity extends AppCompatActivity {
                 String name = device.getName();
                 String address = device.getAddress();
                 String rssi = Integer.toString(intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE));
-                Log.i("Device Found", "Name: "+ name + " Address: " + address + " RSSI: " + rssi);
+                //Log.i("Device Found", "Name: "+ name + " Address: " + address + " RSSI: " + rssi);
+
+                if(!addresses.contains(address)){
+                    addresses.add(address);
+                    String deviceString = "";
+                    if (name == null ||name.equals("")){
+                        deviceString = address + " -RSSI " + rssi + "dB";
+                    }else {
+                        deviceString = name + " -RSSI " + rssi + "dB";
+                    }
+                    bluetoothDevices.add(deviceString);
+                    arrayAdapter.notifyDataSetChanged();
+
+                }
             }
         }
     };
     public void searchClcked(View view){
         statusTextView.setText("Searching...");
         searchButton.setEnabled(false);
+        bluetoothDevices.clear();
+        addresses.clear();
         bluetoothAdapter.startDiscovery();
     }
 
@@ -50,11 +70,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         listView = findViewById(R.id.listView);
         statusTextView= findViewById(R.id.statusTextView);
         searchButton= findViewById(R.id.searchButton);
-
+        arrayAdapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_1, bluetoothDevices);
+        listView.setAdapter(arrayAdapter);
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
@@ -62,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         registerReceiver(broadcastReceiver, intentFilter);
+
+
     }
 
 }
